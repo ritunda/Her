@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Plant Medicine · Herbal Encyclopedia & Store</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* (keep your existing CSS – unchanged) */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.5;
+        }
+        :root {
+            --primary: #0f3b3b;
+            --primary-light: #2d5e5e;
+            --accent: #d97706;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-600: #475569;
+            --gray-800: #1e293b;
+            --white: #ffffff;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .container { max-width: 1280px; margin: 0 auto; padding: 0 1.5rem; }
+        .header {
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+            position: sticky; top: 0; z-index: 10;
+            backdrop-filter: blur(8px);
+            background: rgba(255,255,255,0.95);
+        }
+        .header-content {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 1rem 0; flex-wrap: wrap; gap: 1rem;
+        }
+        .logo {
+            display: flex; align-items: center; gap: 0.5rem;
+            font-size: 1.5rem; font-weight: 700; color: var(--primary);
+        }
+        .logo i { font-size: 2rem; color: var(--accent); }
+        .nav-links { display: flex; gap: 2rem; font-weight: 600; }
+        .nav-link {
+            cursor: pointer; padding: 0.5rem 0;
+            border-bottom: 2px solid transparent; transition: border-color 0.2s;
+        }
+        .nav-link.active { border-bottom-color: var(--accent); color: var(--primary); }
+        .search-bar {
+            flex: 1; max-width: 400px; display: flex; align-items: center;
+            background: var(--gray-100); border-radius: 40px; padding: 0.5rem 1rem;
+            border: 1px solid var(--gray-200);
+        }
+        .search-bar i { color: var(--gray-600); margin-right: 0.5rem; }
+        .search-bar input {
+            border: none; background: transparent; width: 100%; outline: none;
+            font-size: 0.95rem;
+        }
+        .feed {
+            display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin: 2rem 0;
+        }
+        @media (min-width: 640px) { .feed { grid-template-columns: repeat(2, 1fr); } }
+        @media (min-width: 1024px) { .feed { grid-template-columns: repeat(3, 1fr); } }
+        .plant-card, .ad-card, .product-card {
+            background: var(--white); border-radius: 1rem; overflow: hidden;
+            box-shadow: var(--shadow); transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer; border: 1px solid var(--gray-200);
+        }
+        .plant-card:hover, .ad-card:hover, .product-card:hover {
+            transform: translateY(-4px); box-shadow: var(--shadow-lg);
+        }
+        .plant-image, .product-image {
+            width: 100%; height: 180px; object-fit: cover; background: var(--gray-100);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--gray-600); font-size: 3rem;
+        }
+        .plant-content, .product-content { padding: 1.2rem; }
+        .plant-name {
+            font-weight: 700; font-size: 1.2rem; color: var(--primary); margin-bottom: 0.25rem;
+        }
+        .plant-scientific { font-style: italic; color: var(--gray-600); font-size: 0.9rem; }
+        .plant-family { font-size: 0.85rem; color: var(--gray-600); margin: 0.5rem 0; }
+        .plant-description-preview {
+            color: var(--gray-800); font-size: 0.9rem;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+            margin: 0.5rem 0;
+        }
+        .plant-date {
+            font-size: 0.75rem; color: var(--gray-600);
+            display: flex; align-items: center; gap: 0.25rem;
+        }
+        .plant-details-expanded {
+            margin-top: 1rem; padding: 1rem; background: var(--gray-100);
+            border-radius: 0.5rem; border-left: 4px solid var(--accent); display: none;
+        }
+        .visible { display: block; }
+        .plant-highlights {
+            background: #fef3c7; padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 1rem;
+        }
+        .product-shelf {
+            margin-top: 1.5rem; overflow-x: auto; white-space: nowrap; padding-bottom: 0.5rem;
+        }
+        .shelf-title { font-weight: 600; margin-bottom: 0.5rem; color: var(--primary); }
+        .shelf-items { display: flex; gap: 1rem; }
+        .shelf-item {
+            flex: 0 0 160px; background: white; border: 1px solid var(--gray-200);
+            border-radius: 0.75rem; padding: 0.75rem; text-align: center;
+            cursor: pointer; transition: transform 0.2s;
+        }
+        .shelf-item:hover { transform: scale(1.02); border-color: var(--accent); }
+        .shelf-image {
+            width: 100%; height: 100px; object-fit: cover; border-radius: 0.5rem;
+            background: var(--gray-100);
+        }
+        .shelf-name { font-weight: 600; font-size: 0.9rem; margin: 0.5rem 0 0.2rem; }
+        .shelf-price { color: var(--primary); font-weight: 700; }
+        .whatsapp-btn {
+            display: inline-block; background: #25D366; color: white; padding: 0.4rem 0.8rem;
+            border-radius: 40px; font-size: 0.75rem; font-weight: 600; text-decoration: none;
+            margin-top: 0.5rem;
+        }
+        .whatsapp-btn i { margin-right: 0.25rem; }
+        .ad-card { background: linear-gradient(145deg, #faf5ff, white); border: 1px solid var(--accent); }
+        .ad-content { padding: 1.2rem; }
+        .ad-badge {
+            display: inline-block; background: var(--accent); color: white;
+            font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.8rem;
+            border-radius: 20px; margin-bottom: 0.5rem;
+        }
+        .ad-title { font-weight: 700; font-size: 1.1rem; color: var(--primary); }
+        .ad-company { font-size: 0.85rem; color: var(--gray-600); }
+        .ad-description { font-size: 0.9rem; margin: 0.5rem 0; }
+        .ad-link {
+            color: var(--accent); font-weight: 600; text-decoration: none;
+            display: inline-flex; align-items: center; gap: 0.25rem;
+        }
+        .ad-link:hover { text-decoration: underline; }
+        .store-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem; margin: 2rem 0;
+        }
+        .product-card .product-content { text-align: center; }
+        .product-name { font-weight: 700; font-size: 1.1rem; margin: 0.5rem 0 0.2rem; }
+        .product-price { color: var(--primary); font-weight: 700; font-size: 1.1rem; }
+        .empty-state {
+            grid-column: 1 / -1; text-align: center; padding: 4rem;
+            color: var(--gray-600); background: var(--white); border-radius: 1rem;
+            border: 1px dashed var(--gray-200);
+        }
+        footer {
+            text-align: center; padding: 2rem; color: var(--gray-600);
+            border-top: 1px solid var(--gray-200); margin-top: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo"><i class="fas fa-leaf"></i><span>Plant Medicine</span></div>
+                <div class="nav-links">
+                    <span class="nav-link active" data-view="plants">Plants</span>
+                    <span class="nav-link" data-view="store">Store</span>
+                </div>
+                <div class="search-bar" id="searchContainer" style="display: none;">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search plants...">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div id="feedContainer"></div>
+        <div id="storeContainer" style="display: none;"></div>
+    </main>
+
+    <footer>
+        <i class="fas fa-leaf"></i> Herbal Encyclopedia · Educational purposes
+    </footer>
+
+    <script>
+        (function() {
+            const SUPABASE_URL = 'https://evrzlhartemkpeyhadcv.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_6GTV6PBbK6rMn10sgCXs9g_UCkTuNK3';
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            const feedContainer = document.getElementById('feedContainer');
+            const storeContainer = document.getElementById('storeContainer');
+            const searchInput = document.getElementById('searchInput');
+            const searchContainer = document.getElementById('searchContainer');
+            const navLinks = document.querySelectorAll('.nav-link');
+
+            let plants = [];
+            let ads = [];
+            let products = [];
+            let currentView = 'plants';
+
+            // Navigation
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    currentView = link.dataset.view;
+                    if (currentView === 'plants') {
+                        searchContainer.style.display = 'flex';
+                        storeContainer.style.display = 'none';
+                        feedContainer.style.display = 'block';
+                        loadPlantsData();
+                    } else {
+                        searchContainer.style.display = 'none';
+                        feedContainer.style.display = 'none';
+                        storeContainer.style.display = 'block';
+                        loadStoreData();
+                    }
+                });
+            });
+
+            // Time ago helper
+            function timeAgo(dateString) {
+                if (!dateString) return 'Recently';
+                const now = new Date();
+                const past = new Date(dateString);
+                const diffMs = now - past;
+                const diffSec = Math.floor(diffMs / 1000);
+                const diffMin = Math.floor(diffSec / 60);
+                const diffHr = Math.floor(diffMin / 60);
+                const diffDays = Math.floor(diffHr / 24);
+                if (diffDays > 30) return past.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+                if (diffHr > 0) return `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`;
+                if (diffMin > 0) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+                return 'Just now';
+            }
+
+            // Load plants, ads, and products in parallel
+            async function loadPlantsData() {
+                console.log('Loading plants data...');
+                try {
+                    let plantQuery = supabase.from('plants').select('*');
+                    if (searchInput.value) {
+                        const term = searchInput.value;
+                        plantQuery = plantQuery.or(`name.ilike.%${term}%,scientific_name.ilike.%${term}%,family.ilike.%${term}%`);
+                    }
+                    plantQuery = plantQuery.order('created_at', { ascending: false });
+
+                    // Parallel queries
+                    const [plantResult, adResult, productResult] = await Promise.all([
+                        plantQuery,
+                        supabase.from('ads').select('*').order('created_at', { ascending: false }),
+                        supabase.from('products').select('*')
+                    ]);
+
+                    if (plantResult.error) throw plantResult.error;
+                    if (adResult.error) throw adResult.error;
+                    if (productResult.error) throw productResult.error;
+
+                    plants = plantResult.data || [];
+                    ads = adResult.data || [];
+                    products = productResult.data || [];
+
+                    console.log('Plants:', plants.length, 'Ads:', ads.length, 'Products:', products.length);
+                    renderFeed();
+                } catch (err) {
+                    console.error('Error loading data:', err);
+                    feedContainer.innerHTML = `<div class="empty-state">Error: ${err.message}</div>`;
+                }
+            }
+
+            function renderFeed() {
+                if (plants.length === 0 && ads.length === 0) {
+                    feedContainer.innerHTML = '<div class="empty-state">No content yet.</div>';
+                    return;
+                }
+
+                // Combine plants and ads: insert an ad every 3 plants
+                const combined = [];
+                let plantIndex = 0;
+                let adIndex = 0;
+                while (plantIndex < plants.length || adIndex < ads.length) {
+                    if (plantIndex < plants.length) {
+                        combined.push({ type: 'plant', data: plants[plantIndex++] });
+                    }
+                    if (plantIndex % 3 === 0 && adIndex < ads.length) {
+                        combined.push({ type: 'ad', data: ads[adIndex++] });
+                    }
+                }
+
+                let html = '';
+                combined.forEach(item => {
+                    if (item.type === 'plant') {
+                        const p = item.data;
+                        const imageHtml = p.image_url ? `<img src="${p.image_url}" alt="${p.name}" class="plant-image">` : `<div class="plant-image"><i class="fas fa-leaf"></i></div>`;
+                        const plantProducts = products.filter(prod => prod.plant_id === p.id);
+                        const productShelf = plantProducts.length > 0 ? `
+                            <div class="product-shelf">
+                                <div class="shelf-title">Related products</div>
+                                <div class="shelf-items">
+                                    ${plantProducts.map(prod => {
+                                        const msg = encodeURIComponent(`I'm interested in buying: ${prod.name} - $${prod.price || ''}\n${prod.description || ''}`);
+                                        return `
+                                        <div class="shelf-item">
+                                            <img src="${prod.image_url || 'https://via.placeholder.com/100'}" alt="${prod.name}" class="shelf-image">
+                                            <div class="shelf-name">${prod.name}</div>
+                                            <div class="shelf-price">$${prod.price || '0.00'}</div>
+                                            <a href="https://wa.me/${prod.whatsapp_number || '1234567890'}?text=${msg}" target="_blank" class="whatsapp-btn"><i class="fab fa-whatsapp"></i> Order</a>
+                                        </div>
+                                    `}).join('')}
+                                </div>
+                            </div>
+                        ` : '';
+                        html += `
+                        <div class="plant-card" onclick="toggleDetails('${p.id}')">
+                            ${imageHtml}
+                            <div class="plant-content">
+                                <div class="plant-name">${p.name}</div>
+                                <div class="plant-scientific">${p.scientific_name || ''}</div>
+                                <div class="plant-family">${p.family || ''}</div>
+                                <div class="plant-description-preview">${p.description || ''}</div>
+                                <div class="plant-date"><i class="far fa-clock"></i> ${timeAgo(p.created_at)}</div>
+                            </div>
+                            <div class="plant-details-expanded" id="plant-${p.id}">
+                                <div class="plant-highlights"><strong>Medicinal uses:</strong> ${p.medicinal_uses || 'Not specified'}</div>
+                                <div><strong>Full description:</strong> ${p.description || ''}</div>
+                                ${productShelf}
+                            </div>
+                        </div>
+                        `;
+                    } else {
+                        const ad = item.data;
+                        const logoHtml = ad.logo_url ? `<img src="${ad.logo_url}" alt="logo" style="width:40px; height:40px; border-radius:8px;">` : '';
+                        html += `
+                        <div class="ad-card">
+                            <div class="ad-content">
+                                <span class="ad-badge"><i class="fas fa-ad"></i> Sponsored</span>
+                                <div style="display:flex; align-items:center; gap:1rem; margin-bottom:0.5rem;">
+                                    ${logoHtml}
+                                    <div>
+                                        <div class="ad-title">${ad.title}</div>
+                                        <div class="ad-company">${ad.company || ''}</div>
+                                    </div>
+                                </div>
+                                <div class="ad-description">${ad.description || ''}</div>
+                                <a href="${ad.url}" target="_blank" class="ad-link">Learn more <i class="fas fa-arrow-right"></i></a>
+                            </div>
+                        </div>
+                        `;
+                    }
+                });
+
+                feedContainer.innerHTML = html;
+            }
+
+            window.toggleDetails = (id) => {
+                document.getElementById(`plant-${id}`)?.classList.toggle('visible');
+            };
+
+            // Store view
+            async function loadStoreData() {
+                console.log('Loading store data...');
+                try {
+                    const { data: productData, error: productError } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+                    if (productError) throw productError;
+                    products = productData || [];
+                    console.log('Store products loaded:', products.length);
+                    renderStore();
+                } catch (err) {
+                    console.error('Error loading store:', err);
+                    storeContainer.innerHTML = `<div class="empty-state">Error: ${err.message}</div>`;
+                }
+            }
+
+            function renderStore() {
+                if (products.length === 0) {
+                    storeContainer.innerHTML = '<div class="empty-state">No products yet.</div>';
+                    return;
+                }
+                let html = '<div class="store-grid">';
+                products.forEach(prod => {
+                    const msg = encodeURIComponent(`I'm interested in buying: ${prod.name} - $${prod.price || ''}\n${prod.description || ''}`);
+                    html += `
+                    <div class="product-card">
+                        <img src="${prod.image_url || 'https://via.placeholder.com/200'}" alt="${prod.name}" class="plant-image">
+                        <div class="product-content">
+                            <div class="product-name">${prod.name}</div>
+                            <div class="product-price">$${prod.price || '0.00'}</div>
+                            <p style="font-size:0.85rem; color:#666;">${prod.description || ''}</p>
+                            <a href="https://wa.me/${prod.whatsapp_number || '1234567890'}?text=${msg}" target="_blank" class="whatsapp-btn"><i class="fab fa-whatsapp"></i> Order via WhatsApp</a>
+                        </div>
+                    </div>
+                    `;
+                });
+                html += '</div>';
+                storeContainer.innerHTML = html;
+            }
+
+            // Search input
+            searchInput.addEventListener('input', () => {
+                if (currentView === 'plants') loadPlantsData();
+            });
+
+            // Initial load
+            loadPlantsData();
+        })();
+    </script>
+</body>
+</html>
