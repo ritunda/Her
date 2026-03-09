@@ -1,414 +1,638 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Plant Medicine · Herbal Encyclopedia & Store</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        /* (keep your existing CSS – unchanged) */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #f8fafc;
-            color: #1e293b;
-            line-height: 1.5;
-        }
-        :root {
-            --primary: #0f3b3b;
-            --primary-light: #2d5e5e;
-            --accent: #d97706;
-            --gray-100: #f1f5f9;
-            --gray-200: #e2e8f0;
-            --gray-600: #475569;
-            --gray-800: #1e293b;
-            --white: #ffffff;
-            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-        }
-        .container { max-width: 1280px; margin: 0 auto; padding: 0 1.5rem; }
-        .header {
-            background: var(--white);
-            border-bottom: 1px solid var(--gray-200);
-            position: sticky; top: 0; z-index: 10;
-            backdrop-filter: blur(8px);
-            background: rgba(255,255,255,0.95);
-        }
-        .header-content {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 1rem 0; flex-wrap: wrap; gap: 1rem;
-        }
-        .logo {
-            display: flex; align-items: center; gap: 0.5rem;
-            font-size: 1.5rem; font-weight: 700; color: var(--primary);
-        }
-        .logo i { font-size: 2rem; color: var(--accent); }
-        .nav-links { display: flex; gap: 2rem; font-weight: 600; }
-        .nav-link {
-            cursor: pointer; padding: 0.5rem 0;
-            border-bottom: 2px solid transparent; transition: border-color 0.2s;
-        }
-        .nav-link.active { border-bottom-color: var(--accent); color: var(--primary); }
-        .search-bar {
-            flex: 1; max-width: 400px; display: flex; align-items: center;
-            background: var(--gray-100); border-radius: 40px; padding: 0.5rem 1rem;
-            border: 1px solid var(--gray-200);
-        }
-        .search-bar i { color: var(--gray-600); margin-right: 0.5rem; }
-        .search-bar input {
-            border: none; background: transparent; width: 100%; outline: none;
-            font-size: 0.95rem;
-        }
-        .feed {
-            display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin: 2rem 0;
-        }
-        @media (min-width: 640px) { .feed { grid-template-columns: repeat(2, 1fr); } }
-        @media (min-width: 1024px) { .feed { grid-template-columns: repeat(3, 1fr); } }
-        .plant-card, .ad-card, .product-card {
-            background: var(--white); border-radius: 1rem; overflow: hidden;
-            box-shadow: var(--shadow); transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer; border: 1px solid var(--gray-200);
-        }
-        .plant-card:hover, .ad-card:hover, .product-card:hover {
-            transform: translateY(-4px); box-shadow: var(--shadow-lg);
-        }
-        .plant-image, .product-image {
-            width: 100%; height: 180px; object-fit: cover; background: var(--gray-100);
-            display: flex; align-items: center; justify-content: center;
-            color: var(--gray-600); font-size: 3rem;
-        }
-        .plant-content, .product-content { padding: 1.2rem; }
-        .plant-name {
-            font-weight: 700; font-size: 1.2rem; color: var(--primary); margin-bottom: 0.25rem;
-        }
-        .plant-scientific { font-style: italic; color: var(--gray-600); font-size: 0.9rem; }
-        .plant-family { font-size: 0.85rem; color: var(--gray-600); margin: 0.5rem 0; }
-        .plant-description-preview {
-            color: var(--gray-800); font-size: 0.9rem;
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-            margin: 0.5rem 0;
-        }
-        .plant-date {
-            font-size: 0.75rem; color: var(--gray-600);
-            display: flex; align-items: center; gap: 0.25rem;
-        }
-        .plant-details-expanded {
-            margin-top: 1rem; padding: 1rem; background: var(--gray-100);
-            border-radius: 0.5rem; border-left: 4px solid var(--accent); display: none;
-        }
-        .visible { display: block; }
-        .plant-highlights {
-            background: #fef3c7; padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 1rem;
-        }
-        .product-shelf {
-            margin-top: 1.5rem; overflow-x: auto; white-space: nowrap; padding-bottom: 0.5rem;
-        }
-        .shelf-title { font-weight: 600; margin-bottom: 0.5rem; color: var(--primary); }
-        .shelf-items { display: flex; gap: 1rem; }
-        .shelf-item {
-            flex: 0 0 160px; background: white; border: 1px solid var(--gray-200);
-            border-radius: 0.75rem; padding: 0.75rem; text-align: center;
-            cursor: pointer; transition: transform 0.2s;
-        }
-        .shelf-item:hover { transform: scale(1.02); border-color: var(--accent); }
-        .shelf-image {
-            width: 100%; height: 100px; object-fit: cover; border-radius: 0.5rem;
-            background: var(--gray-100);
-        }
-        .shelf-name { font-weight: 600; font-size: 0.9rem; margin: 0.5rem 0 0.2rem; }
-        .shelf-price { color: var(--primary); font-weight: 700; }
-        .whatsapp-btn {
-            display: inline-block; background: #25D366; color: white; padding: 0.4rem 0.8rem;
-            border-radius: 40px; font-size: 0.75rem; font-weight: 600; text-decoration: none;
-            margin-top: 0.5rem;
-        }
-        .whatsapp-btn i { margin-right: 0.25rem; }
-        .ad-card { background: linear-gradient(145deg, #faf5ff, white); border: 1px solid var(--accent); }
-        .ad-content { padding: 1.2rem; }
-        .ad-badge {
-            display: inline-block; background: var(--accent); color: white;
-            font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.8rem;
-            border-radius: 20px; margin-bottom: 0.5rem;
-        }
-        .ad-title { font-weight: 700; font-size: 1.1rem; color: var(--primary); }
-        .ad-company { font-size: 0.85rem; color: var(--gray-600); }
-        .ad-description { font-size: 0.9rem; margin: 0.5rem 0; }
-        .ad-link {
-            color: var(--accent); font-weight: 600; text-decoration: none;
-            display: inline-flex; align-items: center; gap: 0.25rem;
-        }
-        .ad-link:hover { text-decoration: underline; }
-        .store-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 1.5rem; margin: 2rem 0;
-        }
-        .product-card .product-content { text-align: center; }
-        .product-name { font-weight: 700; font-size: 1.1rem; margin: 0.5rem 0 0.2rem; }
-        .product-price { color: var(--primary); font-weight: 700; font-size: 1.1rem; }
-        .empty-state {
-            grid-column: 1 / -1; text-align: center; padding: 4rem;
-            color: var(--gray-600); background: var(--white); border-radius: 1rem;
-            border: 1px dashed var(--gray-200);
-        }
-        footer {
-            text-align: center; padding: 2rem; color: var(--gray-600);
-            border-top: 1px solid var(--gray-200); margin-top: 3rem;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HerbalMed · blog + hidden admin (Supabase)</title>
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Supabase JS client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+    body {
+      background-color: #f4f2ee;
+      color: #1e1e1e;
+      padding-bottom: 2rem;
+    }
+    .navbar {
+      background: white;
+      padding: 0.8rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e0dfdb;
+    }
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #0a5c3e;
+    }
+    .logo i {
+      color: #2b7a4b;
+      margin-right: 6px;
+    }
+    .nav-links a {
+      margin-left: 2rem;
+      text-decoration: none;
+      color: #5e5e5e;
+      font-weight: 500;
+    }
+    .nav-links a:hover {
+      color: #0a5c3e;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    /* Blog post */
+    .blog-post {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      border: 1px solid #e0e0d0;
+    }
+    .post-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1rem;
+    }
+    .avatar {
+      width: 52px;
+      height: 52px;
+      background: #2b7a4b;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1.4rem;
+    }
+    .author-info h4 {
+      font-size: 1.1rem;
+    }
+    .author-info p {
+      font-size: 0.85rem;
+      color: #666;
+    }
+    .post-preview { display: block; }
+    .post-full { display: none; }
+    .post.expanded .post-preview { display: none; }
+    .post.expanded .post-full { display: block; }
+    .read-more-btn {
+      background: none;
+      border: none;
+      color: #0a5c3e;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0.5rem 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .post-image {
+      width: 100%;
+      max-height: 300px;
+      object-fit: cover;
+      border-radius: 12px;
+      margin: 0.8rem 0;
+      border: 1px solid #eee;
+    }
+    .post-actions {
+      display: flex;
+      gap: 2rem;
+      padding-top: 0.8rem;
+      border-top: 1px solid #e6e6e6;
+      margin-top: 1rem;
+      color: #5e5e5e;
+    }
+
+    /* Product shelves */
+    .related-products { margin: 1.5rem 0 0.5rem; }
+    .related-products h4 { font-size: 1.1rem; color: #1e3a2f; margin-bottom: 0.8rem; }
+    .product-shelf {
+      display: flex;
+      gap: 1rem;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+    }
+    .product-shelf .product-card {
+      flex: 0 0 auto;
+      width: 160px;
+      background: white;
+      border-radius: 16px;
+      border: 1px solid #e0dbd2;
+      padding: 0.8rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+    .product-shelf .product-card img {
+      width: 100%;
+      height: 110px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+    .product-card h5 {
+      font-size: 0.95rem;
+      margin: 8px 0 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .product-price {
+      font-weight: 700;
+      color: #1e5c3a;
+      font-size: 0.95rem;
+    }
+    .btn-wa {
+      background: #25D366;
+      color: white;
+      border: none;
+      padding: 6px 0;
+      width: 100%;
+      border-radius: 30px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .btn-wa i { font-size: 0.9rem; }
+
+    /* Global shelf */
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin: 2rem 0 1rem;
+    }
+    .section-title h2 {
+      font-size: 1.6rem;
+      font-weight: 500;
+      color: #1e3a2f;
+    }
+    .global-shelf .product-card {
+      width: 170px;
+    }
+
+    /* Admin panel (hidden by default) */
+    .admin-section {
+      background: white;
+      border-radius: 24px;
+      padding: 2rem;
+      margin-top: 3rem;
+      border: 2px solid #dad6d0;
+      display: none; /* hidden until toggled */
+    }
+    .admin-section.visible {
+      display: block;
+    }
+    .admin-section h2 {
+      color: #1e3a2f;
+      margin-bottom: 1.5rem;
+    }
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+    .form-group label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 6px;
+      color: #2b5d41;
+    }
+    .form-group input, .form-group textarea {
+      width: 100%;
+      padding: 12px 18px;
+      border: 1px solid #cfcbc4;
+      border-radius: 40px;
+      background: #fefcf9;
+      font-size: 1rem;
+    }
+    .btn-primary {
+      background: #1a583a;
+      color: white;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 40px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-secondary {
+      background: #e2e9e2;
+      border: 1px solid #b1c7b8;
+      padding: 8px 20px;
+      border-radius: 40px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .product-list-admin {
+      margin-top: 2rem;
+    }
+    .admin-item {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      padding: 1rem 0;
+      border-bottom: 1px solid #ece7e0;
+    }
+    .admin-item img {
+      width: 60px;
+      height: 60px;
+      border-radius: 12px;
+      object-fit: cover;
+    }
+    .admin-item-info { flex: 1; }
+    .admin-item-info strong { font-size: 1.1rem; }
+    .btn-delete {
+      background: none;
+      border: none;
+      color: #b13030;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    /* Footer with hidden admin toggle */
+    .footer-note {
+      text-align: center;
+      color: #7a7a7a;
+      margin-top: 2rem;
+      padding: 1rem;
+    }
+    .footer-note .admin-toggle {
+      color: #0a5c3e;
+      cursor: pointer;
+      text-decoration: underline dotted;
+      margin-left: 10px;
+    }
+    .error-message {
+      color: #b33;
+      background: #ffe5e5;
+      padding: 0.5rem;
+      border-radius: 30px;
+      margin: 1rem 0;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
-    <header class="header">
-        <div class="container">
-            <div class="header-content">
-                <div class="logo"><i class="fas fa-leaf"></i><span>Plant Medicine</span></div>
-                <div class="nav-links">
-                    <span class="nav-link active" data-view="plants">Plants</span>
-                    <span class="nav-link" data-view="store">Store</span>
-                </div>
-                <div class="search-bar" id="searchContainer" style="display: none;">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Search plants...">
-                </div>
+  <div class="navbar">
+    <div class="logo"><i class="fas fa-leaf"></i> HerbalMed</div>
+    <div class="nav-links">
+      <a href="#blog">Blog</a>
+      <a href="#products">Shop</a>
+    </div>
+  </div>
+
+  <div class="container" id="blog">
+    <!-- blog posts will be injected here -->
+  </div>
+
+  <!-- Global product shelf -->
+  <div class="container" id="products">
+    <div class="section-title">
+      <h2><i class="fas fa-store-alt"></i> All herbal products</h2>
+    </div>
+    <div id="globalProductShelf" class="product-shelf global-shelf"></div>
+  </div>
+
+  <!-- Hidden admin panel (toggled by footer link) -->
+  <div class="container">
+    <div class="admin-section" id="adminPanel">
+      <h2><i class="fas fa-pen"></i> Admin panel – manage products</h2>
+      <div id="adminError" class="error-message" style="display: none;"></div>
+      <div class="form-group">
+        <label>Product name</label>
+        <input type="text" id="prodName" placeholder="e.g. Ashwagandha powder">
+      </div>
+      <div class="form-group">
+        <label>Price (as text)</label>
+        <input type="text" id="prodPrice" placeholder="$24.99">
+      </div>
+      <div class="form-group">
+        <label>Image URL</label>
+        <input type="url" id="prodImage" placeholder="https://..." value="https://placehold.co/200x150/cccccc/white?text=Herb">
+      </div>
+      <div class="form-group">
+        <label>Short description</label>
+        <textarea id="prodDesc" rows="2" placeholder="Organic, 100g ..."></textarea>
+      </div>
+      <button class="btn-primary" onclick="addProduct()">➕ Add product</button>
+      <button class="btn-secondary" onclick="refreshProducts()" style="margin-left: 1rem;">⟲ Refresh list</button>
+
+      <div class="product-list-admin" id="adminProductList">
+        <p>Loading products...</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    <span>🌿 HerbalMed — data from Supabase</span>
+    <span class="admin-toggle" onclick="toggleAdmin()">🔒 Admin</span>
+  </div>
+
+  <script>
+    // ==================== SUPABASE CONFIGURATION ====================
+    // Use the new credentials provided by the user
+    const SUPABASE_URL = 'https://bprwsokywfrwiagruhlg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_q8vvXvMYqkppCQ6Fy7hCuw_pVErux21';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ==================== BLOG POST DEFINITIONS ====================
+    const blogPosts = [
+      {
+        id: 'post1',
+        avatar: '<i class="fas fa-user-md"></i>',
+        author: 'Dr. Mira Sharma · Herbalist',
+        time: '2h ago · 🌿 Ayurveda',
+        preview: 'Just discovered the power of <strong>Tulsi (Holy Basil)</strong> for respiratory wellness. I brew it fresh every morning – adaptogenic and calming. Anyone else uses tulsi daily? 🍃',
+        full: '<p>Just discovered the power of <strong>Tulsi (Holy Basil)</strong> for respiratory wellness. I brew it fresh every morning – adaptogenic and calming. Anyone else uses tulsi daily? 🍃</p><p>I\'ve been reading a 2023 study about tulsi\'s ability to modulate cortisol levels. Combined with ginger and licorice, it\'s a game changer for stress and mild respiratory discomfort. I\'ll share the full protocol in my next post. Stay tuned! #herbalism #ayurveda</p>',
+        image: 'https://placehold.co/800x400/1e3a2f/white?text=Tulsi+Leaf+Tea',
+        tags: ['tulsi', 'holy basil', 'tea']
+      },
+      {
+        id: 'post2',
+        avatar: '<i class="fas fa-seedling"></i>',
+        author: 'Rakesh Mehta · Wildcraft Herbals',
+        time: '1d ago · 🌱 Foraging',
+        preview: 'Harvesting fresh Ashwagandha roots from our community garden. The root smells so earthy! We\'ll dry and powder for the winter. If you want to learn, join our workshop next Saturday. 🙌',
+        full: '<p>Harvesting fresh Ashwagandha roots from our community garden. The root smells so earthy! We\'ll dry and powder for the winter. If you want to learn, join our workshop next Saturday. 🙌</p><p>Ashwagandha (Withania somnifera) is a cornerstone of Ayurvedic rejuvenation. We\'ll cover harvesting timing, drying methods, and how to prepare the traditional milk decoction. Limited spots – DM me to register. 🌿</p>',
+        image: 'https://placehold.co/800x400/4a6b4f/white?text=Ashwagandha+Roots',
+        tags: ['ashwagandha', 'withania']
+      },
+      {
+        id: 'post3',
+        avatar: '<i class="fas fa-mortar-pestle"></i>',
+        author: 'Priya K. · Ayurvedic Practitioner',
+        time: '3d ago · 💚 Digestion',
+        preview: 'Triphala is my go-to gentle cleanse. Mix with warm water at night. Do you use powder or tablets? Let\'s discuss dosage experiences 👇',
+        full: '<p>Triphala is my go-to gentle cleanse. Mix with warm water at night. Do you use powder or tablets? Let\'s discuss dosage experiences 👇</p><p>I prefer the powder because it\'s more customizable. ½ tsp with warm water before bed. Some people add a pinch of honey. It\'s important to source from reliable suppliers to ensure the three fruits (amla, haritaki, bibhitaki) are balanced. Share your routines!</p>',
+        image: 'https://placehold.co/800x400/7d6747/white?text=Triphala+Mix',
+        tags: ['triphala', 'amla', 'haritaki']
+      }
+    ];
+
+    // ==================== HELPER FUNCTIONS ====================
+    function filterProductsByTags(products, tags) {
+      if (!tags || !tags.length || !products) return [];
+      return products.filter(p => {
+        const text = (p.name + ' ' + (p.description || '')).toLowerCase();
+        return tags.some(tag => text.includes(tag.toLowerCase()));
+      });
+    }
+
+    // ==================== SUPABASE DATA FUNCTIONS ====================
+    async function loadProducts() {
+      try {
+        const { data, error } = await supabase.from('products').select('*');
+        if (error) throw error;
+        return data || [];
+      } catch (err) {
+        console.error('Error loading products:', err);
+        showError('Failed to load products from Supabase. Check console.');
+        return [];
+      }
+    }
+
+    // ==================== RENDER FUNCTIONS ====================
+    async function renderBlogs() {
+      const container = document.getElementById('blog');
+      const products = await loadProducts();
+
+      container.innerHTML = '';
+      blogPosts.forEach(post => {
+        const related = filterProductsByTags(products, post.tags);
+        let shelfHtml = '';
+        if (related.length > 0) {
+          shelfHtml = '<div class="related-products"><h4><i class="fas fa-leaf"></i> Related products</h4><div class="product-shelf">';
+          related.forEach(prod => {
+            // Encode the whole message to avoid special character issues
+            const message = `I'm interested in ${prod.name} (${prod.price}) from HerbalMed`;
+            const waLink = `https://wa.me/?text=${encodeURIComponent(message)}`;
+            shelfHtml += `
+              <div class="product-card">
+                <img src="${prod.image || 'https://placehold.co/200x150/cccccc/white?text=Herb'}" alt="${prod.name}">
+                <h5>${prod.name}</h5>
+                <div class="product-price">${prod.price}</div>
+                <button class="btn-wa" onclick="window.open('${waLink}', '_blank')"><i class="fab fa-whatsapp"></i> Buy</button>
+              </div>
+            `;
+          });
+          shelfHtml += '</div></div>';
+        }
+
+        const postHtml = `
+          <div class="blog-post post" id="${post.id}">
+            <div class="post-header">
+              <div class="avatar">${post.avatar}</div>
+              <div class="author-info">
+                <h4>${post.author}</h4>
+                <p><i class="far fa-clock"></i> ${post.time}</p>
+              </div>
             </div>
-        </div>
-    </header>
+            <div class="post-content">
+              <div class="post-preview">${post.preview}</div>
+              <div class="post-full">${post.full}</div>
+            </div>
+            <img src="${post.image}" alt="post image" class="post-image">
+            <button class="read-more-btn" onclick="togglePost('${post.id}')">Read more <i class="fas fa-chevron-down"></i></button>
+            ${shelfHtml}
+            <div class="post-actions">
+              <span><i class="far fa-thumbs-up"></i> 124</span>
+              <span><i class="far fa-comment"></i> 33 comments</span>
+              <span><i class="far fa-share-square"></i> Share</span>
+            </div>
+          </div>
+        `;
+        container.innerHTML += postHtml;
+      });
+    }
 
-    <main class="container">
-        <div id="feedContainer"></div>
-        <div id="storeContainer" style="display: none;"></div>
-    </main>
+    async function renderGlobalShelf() {
+      const shelf = document.getElementById('globalProductShelf');
+      const products = await loadProducts();
+      shelf.innerHTML = '';
+      if (products.length === 0) {
+        shelf.innerHTML = '<p>No products yet. Add some in the admin panel.</p>';
+        return;
+      }
+      products.forEach(prod => {
+        const message = `I'm interested in ${prod.name} (${prod.price}) from HerbalMed`;
+        const waLink = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+          <img src="${prod.image || 'https://placehold.co/200x150/cccccc/white?text=Herb'}" alt="${prod.name}">
+          <h5>${prod.name}</h5>
+          <div class="product-price">${prod.price}</div>
+          <button class="btn-wa" onclick="window.open('${waLink}', '_blank')"><i class="fab fa-whatsapp"></i> Buy</button>
+        `;
+        shelf.appendChild(card);
+      });
+    }
 
-    <footer>
-        <i class="fas fa-leaf"></i> Herbal Encyclopedia · Educational purposes
-    </footer>
+    async function renderAdminList() {
+      const container = document.getElementById('adminProductList');
+      try {
+        const products = await loadProducts();
+        if (products.length === 0) {
+          container.innerHTML = '<p>No products. Add some using the form above.</p>';
+          return;
+        }
+        let html = '';
+        products.forEach(p => {
+          html += `
+            <div class="admin-item">
+              <img src="${p.image || 'https://placehold.co/200x150/cccccc/white?text=Herb'}" alt="${p.name}">
+              <div class="admin-item-info">
+                <strong>${p.name}</strong> <span style="color:#1a583a;">${p.price}</span>
+                <p>${p.description || ''}</p>
+              </div>
+              <button class="btn-delete" onclick="deleteProduct(${p.id})" title="delete">✖</button>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      } catch (err) {
+        container.innerHTML = '<p class="error-message">Error loading products.</p>';
+      }
+    }
 
-    <script>
-        (function() {
-            const SUPABASE_URL = 'https://evrzlhartemkpeyhadcv.supabase.co';
-            const SUPABASE_ANON_KEY = 'sb_publishable_6GTV6PBbK6rMn10sgCXs9g_UCkTuNK3';
-            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // ==================== ADMIN ACTIONS ====================
+    window.addProduct = async function() {
+      const name = document.getElementById('prodName').value.trim();
+      const price = document.getElementById('prodPrice').value.trim();
+      const image = document.getElementById('prodImage').value.trim();
+      const desc = document.getElementById('prodDesc').value.trim();
+      const errorDiv = document.getElementById('adminError');
+      errorDiv.style.display = 'none';
 
-            const feedContainer = document.getElementById('feedContainer');
-            const storeContainer = document.getElementById('storeContainer');
-            const searchInput = document.getElementById('searchInput');
-            const searchContainer = document.getElementById('searchContainer');
-            const navLinks = document.querySelectorAll('.nav-link');
+      if (!name || !price) {
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = 'Please enter at least name and price.';
+        return;
+      }
 
-            let plants = [];
-            let ads = [];
-            let products = [];
-            let currentView = 'plants';
+      try {
+        const { error } = await supabase
+          .from('products')
+          .insert([{
+            name,
+            price,
+            image: image || 'https://placehold.co/200x150/cccccc/white?text=Herb',
+            description: desc || ''
+          }]);
 
-            // Navigation
-            navLinks.forEach(link => {
-                link.addEventListener('click', () => {
-                    navLinks.forEach(l => l.classList.remove('active'));
-                    link.classList.add('active');
-                    currentView = link.dataset.view;
-                    if (currentView === 'plants') {
-                        searchContainer.style.display = 'flex';
-                        storeContainer.style.display = 'none';
-                        feedContainer.style.display = 'block';
-                        loadPlantsData();
-                    } else {
-                        searchContainer.style.display = 'none';
-                        feedContainer.style.display = 'none';
-                        storeContainer.style.display = 'block';
-                        loadStoreData();
-                    }
-                });
-            });
+        if (error) throw error;
 
-            // Time ago helper
-            function timeAgo(dateString) {
-                if (!dateString) return 'Recently';
-                const now = new Date();
-                const past = new Date(dateString);
-                const diffMs = now - past;
-                const diffSec = Math.floor(diffMs / 1000);
-                const diffMin = Math.floor(diffSec / 60);
-                const diffHr = Math.floor(diffMin / 60);
-                const diffDays = Math.floor(diffHr / 24);
-                if (diffDays > 30) return past.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-                if (diffHr > 0) return `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`;
-                if (diffMin > 0) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
-                return 'Just now';
-            }
+        // Clear form
+        document.getElementById('prodName').value = '';
+        document.getElementById('prodPrice').value = '';
+        document.getElementById('prodImage').value = 'https://placehold.co/200x150/cccccc/white?text=Herb';
+        document.getElementById('prodDesc').value = '';
 
-            // Load plants, ads, and products in parallel
-            async function loadPlantsData() {
-                console.log('Loading plants data...');
-                try {
-                    let plantQuery = supabase.from('plants').select('*');
-                    if (searchInput.value) {
-                        const term = searchInput.value;
-                        plantQuery = plantQuery.or(`name.ilike.%${term}%,scientific_name.ilike.%${term}%,family.ilike.%${term}%`);
-                    }
-                    plantQuery = plantQuery.order('created_at', { ascending: false });
+        // Refresh all views
+        await Promise.all([
+          renderBlogs(),
+          renderGlobalShelf(),
+          renderAdminList()
+        ]);
+      } catch (err) {
+        console.error('Add product error:', err);
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = 'Failed to add product: ' + err.message;
+      }
+    };
 
-                    // Parallel queries
-                    const [plantResult, adResult, productResult] = await Promise.all([
-                        plantQuery,
-                        supabase.from('ads').select('*').order('created_at', { ascending: false }),
-                        supabase.from('products').select('*')
-                    ]);
+    window.deleteProduct = async function(id) {
+      if (!confirm('Delete this product?')) return;
+      const errorDiv = document.getElementById('adminError');
+      errorDiv.style.display = 'none';
 
-                    if (plantResult.error) throw plantResult.error;
-                    if (adResult.error) throw adResult.error;
-                    if (productResult.error) throw productResult.error;
+      try {
+        const { error } = await supabase.from('products').delete().eq('id', id);
+        if (error) throw error;
 
-                    plants = plantResult.data || [];
-                    ads = adResult.data || [];
-                    products = productResult.data || [];
+        await Promise.all([
+          renderBlogs(),
+          renderGlobalShelf(),
+          renderAdminList()
+        ]);
+      } catch (err) {
+        console.error('Delete error:', err);
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = 'Failed to delete: ' + err.message;
+      }
+    };
 
-                    console.log('Plants:', plants.length, 'Ads:', ads.length, 'Products:', products.length);
-                    renderFeed();
-                } catch (err) {
-                    console.error('Error loading data:', err);
-                    feedContainer.innerHTML = `<div class="empty-state">Error: ${err.message}</div>`;
-                }
-            }
+    window.refreshProducts = async function() {
+      await renderAdminList();
+    };
 
-            function renderFeed() {
-                if (plants.length === 0 && ads.length === 0) {
-                    feedContainer.innerHTML = '<div class="empty-state">No content yet.</div>';
-                    return;
-                }
+    // ==================== UI TOGGLES ====================
+    window.toggleAdmin = function() {
+      const panel = document.getElementById('adminPanel');
+      panel.classList.toggle('visible');
+      if (panel.classList.contains('visible')) {
+        renderAdminList();
+      }
+    };
 
-                // Combine plants and ads: insert an ad every 3 plants
-                const combined = [];
-                let plantIndex = 0;
-                let adIndex = 0;
-                while (plantIndex < plants.length || adIndex < ads.length) {
-                    if (plantIndex < plants.length) {
-                        combined.push({ type: 'plant', data: plants[plantIndex++] });
-                    }
-                    if (plantIndex % 3 === 0 && adIndex < ads.length) {
-                        combined.push({ type: 'ad', data: ads[adIndex++] });
-                    }
-                }
+    window.togglePost = function(postId) {
+      const post = document.getElementById(postId);
+      const btn = post.querySelector('.read-more-btn');
+      if (post.classList.contains('expanded')) {
+        post.classList.remove('expanded');
+        btn.innerHTML = 'Read more <i class="fas fa-chevron-down"></i>';
+      } else {
+        post.classList.add('expanded');
+        btn.innerHTML = 'Show less <i class="fas fa-chevron-up"></i>';
+      }
+    };
 
-                let html = '';
-                combined.forEach(item => {
-                    if (item.type === 'plant') {
-                        const p = item.data;
-                        const imageHtml = p.image_url ? `<img src="${p.image_url}" alt="${p.name}" class="plant-image">` : `<div class="plant-image"><i class="fas fa-leaf"></i></div>`;
-                        const plantProducts = products.filter(prod => prod.plant_id === p.id);
-                        const productShelf = plantProducts.length > 0 ? `
-                            <div class="product-shelf">
-                                <div class="shelf-title">Related products</div>
-                                <div class="shelf-items">
-                                    ${plantProducts.map(prod => {
-                                        const msg = encodeURIComponent(`I'm interested in buying: ${prod.name} - $${prod.price || ''}\n${prod.description || ''}`);
-                                        return `
-                                        <div class="shelf-item">
-                                            <img src="${prod.image_url || 'https://via.placeholder.com/100'}" alt="${prod.name}" class="shelf-image">
-                                            <div class="shelf-name">${prod.name}</div>
-                                            <div class="shelf-price">$${prod.price || '0.00'}</div>
-                                            <a href="https://wa.me/${prod.whatsapp_number || '1234567890'}?text=${msg}" target="_blank" class="whatsapp-btn"><i class="fab fa-whatsapp"></i> Order</a>
-                                        </div>
-                                    `}).join('')}
-                                </div>
-                            </div>
-                        ` : '';
-                        html += `
-                        <div class="plant-card" onclick="toggleDetails('${p.id}')">
-                            ${imageHtml}
-                            <div class="plant-content">
-                                <div class="plant-name">${p.name}</div>
-                                <div class="plant-scientific">${p.scientific_name || ''}</div>
-                                <div class="plant-family">${p.family || ''}</div>
-                                <div class="plant-description-preview">${p.description || ''}</div>
-                                <div class="plant-date"><i class="far fa-clock"></i> ${timeAgo(p.created_at)}</div>
-                            </div>
-                            <div class="plant-details-expanded" id="plant-${p.id}">
-                                <div class="plant-highlights"><strong>Medicinal uses:</strong> ${p.medicinal_uses || 'Not specified'}</div>
-                                <div><strong>Full description:</strong> ${p.description || ''}</div>
-                                ${productShelf}
-                            </div>
-                        </div>
-                        `;
-                    } else {
-                        const ad = item.data;
-                        const logoHtml = ad.logo_url ? `<img src="${ad.logo_url}" alt="logo" style="width:40px; height:40px; border-radius:8px;">` : '';
-                        html += `
-                        <div class="ad-card">
-                            <div class="ad-content">
-                                <span class="ad-badge"><i class="fas fa-ad"></i> Sponsored</span>
-                                <div style="display:flex; align-items:center; gap:1rem; margin-bottom:0.5rem;">
-                                    ${logoHtml}
-                                    <div>
-                                        <div class="ad-title">${ad.title}</div>
-                                        <div class="ad-company">${ad.company || ''}</div>
-                                    </div>
-                                </div>
-                                <div class="ad-description">${ad.description || ''}</div>
-                                <a href="${ad.url}" target="_blank" class="ad-link">Learn more <i class="fas fa-arrow-right"></i></a>
-                            </div>
-                        </div>
-                        `;
-                    }
-                });
+    function showError(msg) {
+      console.error(msg);
+    }
 
-                feedContainer.innerHTML = html;
-            }
+    // ==================== INITIALIZATION ====================
+    (async function init() {
+      await renderBlogs();
+      await renderGlobalShelf();
+      // Admin list loads only when panel is opened
+    })();
+  </script>
 
-            window.toggleDetails = (id) => {
-                document.getElementById(`plant-${id}`)?.classList.toggle('visible');
-            };
+  <!-- ==================== SETUP INSTRUCTIONS ==================== -->
+  <!--
+    IMPORTANT: Before using this page, you must create the 'products' table in your Supabase project.
+    Run the following SQL in the Supabase SQL editor:
 
-            // Store view
-            async function loadStoreData() {
-                console.log('Loading store data...');
-                try {
-                    const { data: productData, error: productError } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-                    if (productError) throw productError;
-                    products = productData || [];
-                    console.log('Store products loaded:', products.length);
-                    renderStore();
-                } catch (err) {
-                    console.error('Error loading store:', err);
-                    storeContainer.innerHTML = `<div class="empty-state">Error: ${err.message}</div>`;
-                }
-            }
+    CREATE TABLE products (
+      id BIGSERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      price TEXT NOT NULL,
+      image TEXT NOT NULL,
+      description TEXT
+    );
 
-            function renderStore() {
-                if (products.length === 0) {
-                    storeContainer.innerHTML = '<div class="empty-state">No products yet.</div>';
-                    return;
-                }
-                let html = '<div class="store-grid">';
-                products.forEach(prod => {
-                    const msg = encodeURIComponent(`I'm interested in buying: ${prod.name} - $${prod.price || ''}\n${prod.description || ''}`);
-                    html += `
-                    <div class="product-card">
-                        <img src="${prod.image_url || 'https://via.placeholder.com/200'}" alt="${prod.name}" class="plant-image">
-                        <div class="product-content">
-                            <div class="product-name">${prod.name}</div>
-                            <div class="product-price">$${prod.price || '0.00'}</div>
-                            <p style="font-size:0.85rem; color:#666;">${prod.description || ''}</p>
-                            <a href="https://wa.me/${prod.whatsapp_number || '1234567890'}?text=${msg}" target="_blank" class="whatsapp-btn"><i class="fab fa-whatsapp"></i> Order via WhatsApp</a>
-                        </div>
-                    </div>
-                    `;
-                });
-                html += '</div>';
-                storeContainer.innerHTML = html;
-            }
+    ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 
-            // Search input
-            searchInput.addEventListener('input', () => {
-                if (currentView === 'plants') loadPlantsData();
-            });
-
-            // Initial load
-            loadPlantsData();
-        })();
-    </script>
+    CREATE POLICY "anon_select" ON products FOR SELECT USING (true);
+    CREATE POLICY "anon_insert" ON products FOR INSERT WITH CHECK (true);
+    CREATE POLICY "anon_delete" ON products FOR DELETE USING (true);
+  -->
 </body>
 </html>
